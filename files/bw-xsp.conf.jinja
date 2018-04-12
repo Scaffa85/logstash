@@ -1,0 +1,30 @@
+input {
+  beats {
+    port => 5044
+  }
+}
+
+# The filter part of this file is commented out to indicate that it is
+# optional.
+ filter {
+   if [message] =~ "com.broadsoft.xsi-events" {
+				drop {}
+   }
+   grok {
+     match => { "message" => "%{COMMONAPACHELOG} %{NUMBER:RequestTimeS} %{NUMBER:RequestTimeMS} %{DATA:Referer} %{DATA:UserAgent} %{IP:RemoteIP}" }
+   }
+   geoip {
+     source => "RemoteIP"
+   }
+}
+
+output {
+  elasticsearch {
+    hosts => "{{ pillar['elastic_host'] }}"
+    user => "{{ pillar['elastic_user'] }}"
+    password => "{{ pillar['elastic_password'] }}"
+    manage_template => false
+    index => "bwxsp-%{+YYYY.MM.dd}"
+    document_type => "%{[@metadata][type]}"
+  }
+}
